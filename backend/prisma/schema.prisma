@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  mahasiswa
+  penanggung_jawab
+  admin
+}
+
+enum FacilityStatus {
+  available
+  unavailable
+}
+
+enum BookingStatus {
+  pending
+  approved_by_pj
+  rejected_by_pj
+  completed
+}
+
+enum PaymentStatus {
+  unpaid
+  waiting_verification
+  paid
+  rejected
+}
+
+model User {
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  password        String
+  role            UserRole  @default(mahasiswa)
+  areaId          String?
+  area            Area?     @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  bookings        Booking[] @relation("UserBookings")
+  approvals       Booking[] @relation("PjApprovals")
+  paymentVerifies Payment[] @relation("AdminPaymentVerifies")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Area {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  users       User[]
+  facilities  Facility[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("areas")
+}
+
+model Facility {
+  id          String         @id @default(uuid())
+  areaId      String
+  area        Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  name        String
+  location    String
+  capacity    Int
+  status      FacilityStatus @default(available)
+  description String?
+  image       String?
+  bookings    Booking[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("facilities")
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  facilityId     String
+  facility       Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  date           DateTime
+  startTime      String
+  endTime        String
+  purpose        String
+  status         BookingStatus @default(pending)
+  pjNote         String?
+  adminNote      String?
+  approvedByPjId String?
+  approvedByPj   User?         @relation("PjApprovals", fields: [approvedByPjId], references: [id], onDelete: SetNull)
+  payment        Payment?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  bookingId         String        @unique
+  booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount            Int           @default(0)
+  proofImage        String?
+  status            PaymentStatus @default(unpaid)
+  adminNote         String?
+  verifiedByAdminId String?
+  verifiedByAdmin   User?         @relation("AdminPaymentVerifies", fields: [verifiedByAdminId], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("payments")
+}
