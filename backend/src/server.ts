@@ -121,6 +121,14 @@ function paymentAccessWhere(user: Express.UserPayload) {
   if (user.role === 'penanggung_jawab') return { booking: { facility: { areaId: user.areaId || '__none__' } } };
   return { id: '__none__' };
 }
+function requirePjArea(req: Request, res: Response) {
+  const areaId = req.user?.areaId;
+  if (!areaId) {
+    fail(res, 'PJ account is not assigned to any area', 400);
+    return null;
+  }
+  return areaId;
+}
 
 app.get('/api/health', (_req, res) => ok(res, 'Telkom Pinjam API is running'));
 
@@ -158,7 +166,8 @@ app.get('/api/dashboard', auth, asyncRoute(async (req, res) => {
     return ok(res, 'Admin dashboard retrieved', { stats: { totalUser, totalArea, totalFacility, paymentWaiting }, latestBookings, paymentPending });
   }
   if (user.role === 'penanggung_jawab') {
-    const areaId = user.areaId || '__none__';
+    const areaId = requirePjArea(req, res);
+    if (!areaId) return;
     const [pending, approved, rejected, totalFacilities, recent] = await Promise.all([
       prisma.booking.count({ where: { status: 'pending', facility: { areaId } } }),
       prisma.booking.count({ where: { status: 'approved_by_pj', facility: { areaId } } }),
@@ -262,21 +271,29 @@ app.put('/api/bookings/:id/complete', auth, role('admin'), asyncRoute(async (req
 }));
 
 app.get('/api/pj/bookings', auth, role('penanggung_jawab'), asyncRoute(async (req, res) => {
-  const where: any = { facility: { areaId: req.user!.areaId || '__none__' } };
+  const areaId = requirePjArea(req, res);
+  if (!areaId) return;
+  const where: any = { facility: { areaId } };
   if (req.query.status) where.status = String(req.query.status);
   return ok(res, 'PJ bookings retrieved', await prisma.booking.findMany({ where, include: bookingInclude, orderBy: { createdAt: 'desc' } }));
 }));
 app.get('/api/pj/bookings/:id', auth, role('penanggung_jawab'), asyncRoute(async (req, res) => {
-  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), facility: { areaId: req.user!.areaId || '__none__' } }, include: bookingInclude });
+  const areaId = requirePjArea(req, res);
+  if (!areaId) return;
+  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), facility: { areaId } }, include: bookingInclude });
   return booking ? ok(res, 'PJ booking retrieved', booking) : fail(res, 'Booking not found', 404);
 }));
 app.put('/api/pj/bookings/:id/approve', auth, role('penanggung_jawab'), asyncRoute(async (req, res) => {
-  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), status: 'pending', facility: { areaId: req.user!.areaId || '__none__' } } });
+  const areaId = requirePjArea(req, res);
+  if (!areaId) return;
+  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), status: 'pending', facility: { areaId } } });
   if (!booking) return fail(res, 'Pending booking not found for your area', 404);
   return ok(res, 'Booking approved', await prisma.booking.update({ where: { id: booking.id }, data: { status: 'approved_by_pj', pjNote: req.body.pjNote || null, approvedByPjId: req.user!.id }, include: bookingInclude }));
 }));
 app.put('/api/pj/bookings/:id/reject', auth, role('penanggung_jawab'), asyncRoute(async (req, res) => {
-  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), status: 'pending', facility: { areaId: req.user!.areaId || '__none__' } } });
+  const areaId = requirePjArea(req, res);
+  if (!areaId) return;
+  const booking = await prisma.booking.findFirst({ where: { id: String(req.params.id), status: 'pending', facility: { areaId } } });
   if (!booking) return fail(res, 'Pending booking not found for your area', 404);
   return ok(res, 'Booking rejected', await prisma.booking.update({ where: { id: booking.id }, data: { status: 'rejected_by_pj', pjNote: req.body.pjNote || null, approvedByPjId: req.user!.id }, include: bookingInclude }));
 }));

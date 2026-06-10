@@ -27,11 +27,19 @@ async function main() {
     update: {},
     create: { name: 'Admin Telkom Pinjam', email: 'admin@telkompinjam.test', password, role: 'admin' },
   });
-  await prisma.user.upsert({
-    where: { email: 'pj.tokong@telkompinjam.test' },
-    update: {},
-    create: { name: 'PJ Tokong Nanas', email: 'pj.tokong@telkompinjam.test', password, role: 'penanggung_jawab', areaId: tokong.id },
-  });
+  const pjs = [
+    { name: 'PJ Tokong Nanas', email: 'pj.tokong@telkompinjam.test', areaId: tokong.id },
+    { name: 'PJ Damar', email: 'pj.damar@telkompinjam.test', areaId: damar.id },
+    { name: 'PJ Lapangan Utama', email: 'pj.lapangan.utama@telkompinjam.test', areaId: lapangan.id },
+  ];
+
+  for (const pj of pjs) {
+    await prisma.user.upsert({
+      where: { email: pj.email },
+      update: { role: 'penanggung_jawab', areaId: pj.areaId },
+      create: { name: pj.name, email: pj.email, password, role: 'penanggung_jawab', areaId: pj.areaId },
+    });
+  }
   await prisma.user.upsert({
     where: { email: 'mahasiswa@telkompinjam.test' },
     update: {},

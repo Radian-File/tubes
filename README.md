@@ -115,7 +115,9 @@ password123
 | Role | Email |
 |---|---|
 | Admin | admin@telkompinjam.test |
-| Penanggung Jawab | pj.tokong@telkompinjam.test |
+| Penanggung Jawab — Gedung Tokong Nanas | pj.tokong@telkompinjam.test |
+| Penanggung Jawab — Gedung Damar | pj.damar@telkompinjam.test |
+| Penanggung Jawab — Lapangan Utama | pj.lapangan.utama@telkompinjam.test |
 | Mahasiswa | mahasiswa@telkompinjam.test |
 
 ## API Summary
