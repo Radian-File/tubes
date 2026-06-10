@@ -9,3 +9,13 @@ build/
 backend/src/uploads/*
 !backend/src/uploads/.gitkeep
 frontend/.vite/
+CHECKPOINT.md
+NGROK_GUIDE.md
+Tugas3_UserManagement_TelkomPinjam_TestResult.xlsx
+CHECKPOINT.md
+backend/src/server.ts
+frontend/.env.example
+frontend/tsconfig.tsbuildinfo
+frontend/vite.config.ts
+frontend/vite.config.ts
+backend/src/server.ts

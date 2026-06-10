@@ -44,7 +44,30 @@ declare global {
   }
 }
 
-app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+const allowedOrigins = new Set([
+  FRONTEND_URL,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+]);
+
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+  try {
+    const host = new URL(origin).hostname;
+    return host.endsWith('.ngrok-free.app') || host.endsWith('.ngrok-free.dev');
+  } catch {
+    return false;
+  }
+}
+
+app.use(cors({
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir));
